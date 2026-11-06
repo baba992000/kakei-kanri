@@ -1,0 +1,48 @@
+# OS 生成ファイル
+Thumbs.db
+Thumbs.db:encryptseed
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# エディタ・IDE関連
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# 環境変数・機密ファイル
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# 依存パッケージ・ビルド成果物（将来的な導入に備えて）
+node_modules/
+dist/
+build/
+package-lock.json.backup
+
+# ログファイル
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# アプリケーションのエクスポート・バックアップデータ
+# （個人情報や家計簿データを含むエクスポートファイルの誤コミット防止）
+kakei_backup_*.csv
+kakei_full_backup_*.json
+*.backup.json
+

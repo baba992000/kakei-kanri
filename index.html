@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家計管理アプリ</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Google Fonts (Outfit & Noto Sans JP) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@300;400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+    <script defer src="js/storage.js"></script>
+    <script defer src="js/categories.js"></script>
+    <script defer src="js/settings.js"></script>
+    <script defer src="js/calendar.js"></script>
+    <script defer src="js/chart.js"></script>
+    <script defer src="js/speech.js"></script>
+    <script defer src="js/record.js"></script>
+    <script defer src="js/jointAccount.js"></script>
+    <script defer src="js/main.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-container">
+            <h1><span class="logo-icon">💰</span>家計管理アプリ</h1>
+            <button id="toggleDarkMode" class="btn-secondary">🌙 ダークモード</button>
+        </div>
+    </header>
+
+    <!-- メインナビゲーション -->
+    <nav class="main-nav">
+        <ul>
+            <li><button class="nav-btn active" data-tab="tab-dashboard"><span class="nav-icon">📊</span><span
+                        class="nav-text">ホーム</span></button></li>
+            <li><button class="nav-btn" data-tab="tab-calendar"><span class="nav-icon">📅</span><span
+                        class="nav-text">カレンダー</span></button></li>
+            <li><button class="nav-btn" data-tab="tab-records"><span class="nav-icon">📋</span><span
+                        class="nav-text">履歴</span></button></li>
+            <li><button class="nav-btn" data-tab="tab-charts"><span class="nav-icon">📈</span><span
+                        class="nav-text">分析</span></button></li>
+            <li><button class="nav-btn feature-section-jointAccount feature-hidden" data-tab="tab-joint"><span
+                        class="nav-icon">🏦</span><span class="nav-text">共同口座</span></button></li>
+            <li><button class="nav-btn" data-tab="tab-settings"><span class="nav-icon">⚙️</span><span
+                        class="nav-text">設定</span></button></li>
+        </ul>
+    </nav>
+
+    <main class="content-area">
+
+        <!-- ダッシュボード (ホーム) -->
+        <section id="tab-dashboard" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- 資産・収支サマリーカード -->
+                <div class="card card-summary">
+                    <div class="card-header-flex">
+                        <h2>資産・収支サマリー</h2>
+                        <button id="readSummaryBtn" class="btn-voice-read" title="今月の収支サマリーを音声で読み上げます">
+                            <span class="speak-anim-icon">🔊</span> レポートを聴く
+                        </button>
+                    </div>
+
+                    <div class="summary-sections">
+                        <!-- 資産・積立 (横並び) -->
+                        <div class="summary-row-section">
+                            <div class="summary-section-header">
+                                <span class="column-title-icon">🏦</span>
+                                <h3>資産・積立</h3>
+                            </div>
+                            <div class="summary-boxes-row">
+                                <div class="summary-box">
+                                    <span class="summary-label">貯金残高</span>
+                                    <span class="summary-val highlight-green" id="savingBalance">0 円</span>
+                                </div>
+                                <div class="summary-box">
+                                    <span class="summary-label">年金残高</span>
+                                    <span class="summary-val highlight-purple" id="pensionBalance">0 円</span>
+                                </div>
+                                <div class="summary-box">
+                                    <span class="summary-label">長期積立</span>
+                                    <span class="summary-val highlight-teal" id="investBalance">0 円</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 今月の収支 (横並び) -->
+                        <div class="summary-row-section">
+                            <div class="summary-section-header">
+                                <span class="column-title-icon">💵</span>
+                                <h3>今月の収支</h3>
+                            </div>
+                            <div class="summary-boxes-row">
+                                <div class="summary-box">
+                                    <span class="summary-label">今月の収入</span>
+                                    <span class="summary-val txt-income" id="income">0 円</span>
+                                    <div class="balance-item-sub feature-section-partTimeIncome feature-hidden">
+                                        <span class="balance-sub-label">うちアルバイト収入</span>
+                                        <span class="balance-sub-val txt-income" id="partTimeIncomeVal">0 円</span>
+                                    </div>
+                                </div>
+                                <div class="summary-box">
+                                    <span class="summary-label">今月の支出</span>
+                                    <span class="summary-val txt-expense" id="expense">0 円</span>
+                                </div>
+                                <div class="summary-box">
+                                    <span class="summary-label">手元残高</span>
+                                    <span class="summary-val highlight-blue" id="balance">0 円</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 支出ランキング -->
+                <div class="card card-ranking">
+                    <h2>今月の支出ランキング (TOP5)</h2>
+                    <div id="rankingContainer" class="ranking-list">
+                        <!-- JSで動的生成 -->
+                        <p class="empty-msg">データがありません</p>
+                    </div>
+                </div>
+
+                <!-- 固定費分析トグルがONの時の割合表示 -->
+                <div class="card card-fixed-cost feature-section-fixedCost feature-hidden">
+                    <h2>固定費 vs 変動費</h2>
+                    <div class="fixed-cost-container">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="fixedCostBar"></div>
+                        </div>
+                        <div class="fixed-cost-legend">
+                            <div><span class="dot dot-fixed"></span>固定費: <span id="fixedCostRatio">0%</span> (<span
+                                    id="fixedCostAmount">0円</span>)</div>
+                            <div><span class="dot dot-variable"></span>変動費: <span id="variableCostRatio">0%</span>
+                                (<span id="variableCostAmount">0円</span>)</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 家族別内訳カード (家族共有ON時のみ表示) -->
+                <div class="card card-family-summary feature-section-familyShare feature-hidden">
+                    <h2>👨‍👩‍👧 家族別内訳 (今月)</h2>
+                    <div class="family-summary-grid">
+                        <div class="family-member-box">
+                            <div class="family-member-label">👤 自分</div>
+                            <div class="family-member-income">収入 <span id="familyIncome_自分">0 円</span></div>
+                            <div class="family-member-expense">支出 <span id="familyExpense_自分">0 円</span></div>
+                            <div class="family-member-balance">収支 <span id="familyBalance_自分">0 円</span></div>
+                        </div>
+                        <div class="family-member-box">
+                            <div class="family-member-label">👤 パートナー</div>
+                            <div class="family-member-income">収入 <span id="familyIncome_パートナー">0 円</span></div>
+                            <div class="family-member-expense">支出 <span id="familyExpense_パートナー">0 円</span></div>
+                            <div class="family-member-balance">収支 <span id="familyBalance_パートナー">0 円</span></div>
+                        </div>
+                        <div class="family-member-box">
+                            <div class="family-member-label">🤝 共通</div>
+                            <div class="family-member-income">収入 <span id="familyIncome_共通">0 円</span></div>
+                            <div class="family-member-expense">支出 <span id="familyExpense_共通">0 円</span></div>
+                            <div class="family-member-balance">収支 <span id="familyBalance_共通">0 円</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 共同口座サマリーウィジェット (共同口座連携ON時のみ表示) -->
+                <div class="card card-joint-dashboard feature-section-jointAccount feature-hidden">
+                    <div class="card-header-flex">
+                        <h2>🏦 共同口座サマリー</h2>
+                        <!-- テスト用自動明細同期ボタン（無効化中）
+                        <button id="dashSyncJointBankBtn" class="btn-voice-read" title="銀行明細を同期取得します">⚡ 明細同期</button>
+                        -->
+                    </div>
+                    <!-- キャッシュカード風残高表示 -->
+                    <div class="joint-bank-card">
+                        <div class="joint-card-chip">💳</div>
+                        <div class="joint-card-bank-name" id="dashJointName">住信SBIネット銀行 (共同生活費口座)</div>
+                        <div class="joint-card-balance-label">現在残高</div>
+                        <div class="joint-card-balance" id="dashJointBalance">0 円</div>
+                        <div class="joint-card-footer">
+                            <span class="joint-card-sync">最終同期: <span id="dashJointSyncTime">未同期</span></span>
+                        </div>
+                    </div>
+                    <!-- 今月の共同支出 -->
+                    <div class="joint-dash-row">
+                        <span class="joint-dash-label">今月の共同支出</span>
+                        <span class="joint-dash-val txt-expense" id="dashJointExpense">0 円</span>
+                    </div>
+                    <!-- 拠出状況 -->
+                    <div class="joint-deposit-section">
+                        <div class="joint-deposit-header">今月の拠出状況</div>
+                        <div class="joint-deposit-row">
+                            <span class="joint-deposit-label">👤 自分</span>
+                            <span class="joint-deposit-val" id="dashJointDepositMy">0 円 / 目標 0 円</span>
+                        </div>
+                        <div class="joint-progress-wrap">
+                            <div class="joint-progress-bar">
+                                <div class="joint-progress-fill" id="dashJointMyBar" style="width:0%"></div>
+                            </div>
+                        </div>
+                        <div class="joint-deposit-row">
+                            <span class="joint-deposit-label">👤 パートナー</span>
+                            <span class="joint-deposit-val" id="dashJointDepositPartner">0 円 / 目標 0 円</span>
+                        </div>
+                        <div class="joint-progress-wrap">
+                            <div class="joint-progress-bar">
+                                <div class="joint-progress-fill" id="dashJointPartnerBar" style="width:0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 精算チェッカー -->
+                    <div class="joint-settlement-section">
+                        <div class="joint-settlement-label">💰 精算チェッカー</div>
+                        <div id="dashJointSettlement" class="joint-settle-tag settle-balanced">今月の入金拠出はまだ記録されていません</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- カレンダー＆登録フォーム -->
+        <section id="tab-calendar" class="tab-content">
+            <div class="calendar-input-container">
+
+                <!-- カレンダー -->
+                <div class="card calendar-card">
+                    <div class="calendar-header">
+                        <button id="prevMonth" class="btn-circle">◀</button>
+                        <h2 id="monthTitle"></h2>
+                        <button id="nextMonth" class="btn-circle">▶</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="calendar-table">
+                            <thead>
+                                <tr>
+                                    <th class="sun">日</th>
+                                    <th>月</th>
+                                    <th>火</th>
+                                    <th>水</th>
+                                    <th>木</th>
+                                    <th>金</th>
+                                    <th class="sat">土</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarBody">
+                                <!-- JSで生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="calendar-instruction">
+                        💡 日付をクリックすると、右側の登録フォームに日付がセットされます。
+                    </div>
+                </div>
+
+                <!-- 登録フォーム -->
+                <div class="card form-card">
+                    <div class="card-header-flex">
+                        <h2>データ登録</h2>
+                        <button type="button" id="openVoiceModalBtn" class="btn-voice-input" title="音声で話すだけで一括入力できます">
+                            <span class="mic-icon">🎙️</span> 音声で入力
+                        </button>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="date">日付</label>
+                        <input type="date" id="date">
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="type">区分</label>
+                        <select id="type">
+                            <option value="収入">収入</option>
+                            <option value="支出" selected>支出</option>
+                            <option value="貯金">貯金（入金）</option>
+                            <option value="貯金出金">貯金出金</option>
+                            <option value="サブスク" class="feature-section-subscription feature-hidden">サブスク（月額）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="amount">金額</label>
+                        <div class="amount-input-group">
+                            <input type="number" id="amount" placeholder="0">
+                            <span class="currency-label">円</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row category-picker-group">
+                        <div class="category-header-row">
+                            <label for="category">カテゴリー</label>
+                            <span class="category-current-tag" id="currentCategoryTag">選択中: -</span>
+                        </div>
+                        <select id="category" class="category-hidden-select">
+                            <!-- JSで動的にオプション生成（機能ON/OFF対応のため） -->
+                        </select>
+                        <div id="categoryGrid" class="category-grid" role="radiogroup" aria-label="カテゴリー選択">
+                            <!-- JSで動的にタイルボタン生成 -->
+                        </div>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="memo">メモ</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="memo" placeholder="品名や詳細など">
+                            <button type="button" id="memoMicBtn" class="btn-icon-input" title="メモを音声入力">🎙️</button>
+                        </div>
+                    </div>
+
+                    <!-- 家族共有がONのときのみ表示 -->
+                    <div class="form-row inline-row feature-section-familyShare feature-hidden">
+                        <label for="owner">登録者</label>
+                        <select id="owner">
+                            <option value="自分">自分</option>
+                            <option value="パートナー">パートナー</option>
+                            <option value="共通">共通</option>
+                        </select>
+                    </div>
+
+                    <!-- 共同口座がONのときのみ表示 -->
+                    <div class="form-row inline-row feature-section-jointAccount feature-hidden">
+                        <label for="account">口座</label>
+                        <select id="account">
+                            <option value="personal">👤 個人口座</option>
+                            <option value="joint">🏦 共同口座</option>
+                        </select>
+                    </div>
+
+                    <button id="addBtn" class="btn-primary">保存する</button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 履歴一覧 -->
+        <section id="tab-records" class="tab-content">
+            <div class="card">
+                <div class="records-header">
+                    <h2>登録履歴</h2>
+
+                    <!-- 家族共有フィルタ -->
+                    <div class="filter-row feature-section-familyShare feature-hidden">
+                        <label for="filterOwner">表示対象:</label>
+                        <select id="filterOwner">
+                            <option value="all">すべて</option>
+                            <option value="自分">自分のみ</option>
+                            <option value="パートナー">パートナーのみ</option>
+                            <option value="共通">共通のみ</option>
+                        </select>
+                    </div>
+
+                    <!-- 共同口座フィルタ -->
+                    <div class="filter-row feature-section-jointAccount feature-hidden">
+                        <label for="filterAccount">口座絞込:</label>
+                        <select id="filterAccount">
+                            <option value="all">すべて</option>
+                            <option value="personal">👤 個人口座</option>
+                            <option value="joint">🏦 共同口座</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="records-table">
+                        <thead>
+                            <tr>
+                                <th>日付</th>
+                                <th>区分</th>
+                                <th>カテゴリ</th>
+                                <th>金額</th>
+                                <th>メモ</th>
+                                <th class="feature-section-familyShare feature-hidden">登録者</th>
+                                <th class="feature-section-jointAccount feature-hidden">口座</th>
+                                <th>編集</th>
+                                <th>削除</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recordList">
+                            <!-- JSで生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- グラフ分析 -->
+        <section id="tab-charts" class="tab-content">
+            <div class="card">
+                <div class="charts-header">
+                    <h2>グラフ分析</h2>
+                    <div class="chart-controls">
+                        <!-- 期間切り替え -->
+                        <div class="btn-group">
+                            <button id="chartPeriodMonth" class="btn-toggle active">月別</button>
+                            <button id="chartPeriodYear" class="btn-toggle">年別</button>
+                        </div>
+                        <!-- 家族別フィルタ -->
+                        <div class="filter-row feature-section-familyShare feature-hidden" style="margin-left: 16px;">
+                            <label for="chartFilterOwner">表示対象:</label>
+                            <select id="chartFilterOwner">
+                                <option value="all">すべて</option>
+                                <option value="自分">自分のみ</option>
+                                <option value="パートナー">パートナーのみ</option>
+                                <option value="共通">共通のみ</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カテゴリフィルタ（チェックボックス） -->
+                <div class="category-filter-card">
+                    <h3>カテゴリフィルター (グラフに含める分類を選択)</h3>
+                    <div id="chartCategoryFilters" class="category-filters-grid">
+                        <!-- JSで動的にチェックボックスを生成 -->
+                    </div>
+                </div>
+
+                <div class="chart-row">
+                    <div class="chart-box">
+                        <h3 id="monthlyChartTitle">月別収支推移 (直近6ヶ月)</h3>
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+
+                    <div class="chart-box">
+                        <div class="chart-box-header">
+                            <h3 id="categoryChartTitle">カテゴリ別支出 (今月)</h3>
+                            <!-- 円グラフ・棒グラフ切替 -->
+                            <div class="btn-group-sm">
+                                <button id="btnChartTypeDoughnut" class="btn-toggle-sm active">円グラフ</button>
+                                <button id="btnChartTypeBar" class="btn-toggle-sm">棒グラフ</button>
+                            </div>
+                        </div>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 設定画面 -->
+        <section id="tab-settings" class="tab-content">
+            <!-- テーマとアクセシビリティ -->
+            <div class="card">
+                <h2>テーマと表示設定</h2>
+
+                <div class="settings-row">
+                    <span class="settings-label">カラーテーマ</span>
+                    <div class="theme-buttons">
+                        <button class="theme-btn btn-theme-green" data-theme="green">グリーン</button>
+                        <button class="theme-btn btn-theme-blue" data-theme="blue">ブルー</button>
+                        <button class="theme-btn btn-theme-purple" data-theme="purple">パープル</button>
+                        <button class="theme-btn btn-theme-mono" data-theme="mono">モノトーン</button>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <span class="settings-label">文字サイズ</span>
+                    <div class="fontsize-buttons">
+                        <button class="fontsize-btn" data-size="small">小</button>
+                        <button class="fontsize-btn" data-size="medium">中</button>
+                        <button class="fontsize-btn" data-size="large">大</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 機能選択 (トグル) -->
+            <div class="card">
+                <h2>機能選択 (ON/OFF切り替え)</h2>
+                <p class="settings-desc">ライフステージに合わせて、必要な機能だけを選択して使用できます。</p>
+
+                <div class="features-grid">
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">アルバイト収入</span>
+                            <span class="feature-desc">アルバイトや副業などの収入カテゴリを追加します。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-partTimeIncome">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">サブスク管理</span>
+                            <span class="feature-desc">月額サービスを「サブスク」として登録し、毎月の固定費を管理。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-subscription">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">家族共有機能</span>
+                            <span class="feature-desc">登録者（自分/パートナー）を設定し、個別の集計や絞り込みを行います。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-familyShare">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="feature-item feature-item-highlight">
+                        <div class="feature-info">
+                            <span class="feature-title">🏦 共同口座連携</span>
+                            <span class="feature-desc">パートナーと共有する生活費口座を連携。残高・拠出状況・精算バランスを一括管理。銀行明細同期＆CSV取込対応。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-jointAccount">
+                            <span class="slider slider-joint"></span>
+                        </label>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">固定費分析</span>
+                            <span class="feature-desc">支出を固定費と変動費に分類し、割合をグラフィカルに分析します。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-fixedCost">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">年金・長期積立管理</span>
+                            <span class="feature-desc">将来用の積立を管理し、資産の状況をより詳細に把握します。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="feature-pension">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 音声入力・読み上げ設定 -->
+            <div class="card card-speech-settings">
+                <h2>🎙️ 音声入力・読み上げ設定</h2>
+                <p class="settings-desc">音声認識（話して登録）と音声合成（レポート・結果の読み上げ）を設定します。</p>
+
+                <!-- 動作診断バッジ -->
+                <div class="speech-status-banner">
+                    <span class="status-title">ブラウザ対応状況:</span>
+                    <div id="voiceSupportStatus" class="status-badge-container">
+                        <span class="badge-loading">診断中...</span>
+                    </div>
+                </div>
+
+                <div class="speech-settings-grid">
+                    <!-- 登録完了時の読み上げ -->
+                    <div class="feature-item">
+                        <div class="feature-info">
+                            <span class="feature-title">登録時の音声案内</span>
+                            <span class="feature-desc">家計簿を登録した際に、金額と内容を声でお知らせします。</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="setting-voiceFeedback" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- 読み上げ速度 -->
+                    <div class="settings-row inline-settings-row">
+                        <div class="feature-info">
+                            <span class="feature-title">読み上げ速度</span>
+                            <span class="feature-desc">サマリーレポートや案内音声のスピードを調整します。</span>
+                        </div>
+                        <div class="rate-select-wrapper">
+                            <select id="setting-voiceRate" class="select-compact">
+                                <option value="0.8">ゆっくり (0.8x)</option>
+                                <option value="1.0" selected>標準 (1.0x)</option>
+                                <option value="1.2">はやめ (1.2x)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="speech-actions-row">
+                    <button type="button" id="testVoiceBtn" class="btn-secondary">🔊 音声テスト再生</button>
+                </div>
+
+                <!-- 話し方ガイド -->
+                <div class="speech-guide-box">
+                    <h3>💡 音声入力の話し方ガイド</h3>
+                    <p>「音声で入力」ボタンを押した後、以下のように自然に話しかけてみてください。</p>
+                    <ul class="speech-examples-list">
+                        <li><strong>「今日 食費 850円 ランチ」</strong> &rarr; 日付:今日 / 支出 / 食費 / 850円 / メモ:ランチ</li>
+                        <li><strong>「昨日 交通費 420円 電車代」</strong> &rarr; 日付:昨日 / 支出 / 交通費 / 420円 / メモ:電車代</li>
+                        <li><strong>「スタバでカフェラテ 620円」</strong> &rarr; 支出 / 食費 / 620円 / メモ:スタバでカフェラテ</li>
+                        <li><strong>「給料 25万円」</strong> &rarr; 収入 / 給与 / 250,000円</li>
+                        <li><strong>「普通預金に3万円 貯金」</strong> &rarr; 貯金 / 普通預金 / 30,000円</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- バックアップとインポート -->
+            <div class="card">
+                <h2>データのバックアップとCSV出力</h2>
+
+                <div class="backup-actions">
+                    <div class="backup-box">
+                        <h3>CSVデータ連携</h3>
+                        <p>家計簿レコードをCSV形式で保存、または読み込みます（Excel互換）。</p>
+                        <div class="btn-group-vertical">
+                            <button id="csvExportBtn" class="btn-primary">CSVエクスポート</button>
+                            <label class="btn-file">
+                                CSVインポート
+                                <input type="file" id="csvImportFile" accept=".csv">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="backup-box">
+                        <h3>完全バックアップ (設定込)</h3>
+                        <p>家計簿の全レコードと、アプリ設定（テーマや機能ON/OFF）をJSONで保存・復元します。</p>
+                        <div class="btn-group-vertical">
+                            <button id="backupExportBtn" class="btn-secondary">バックアップ作成 (JSON)</button>
+                            <label class="btn-file btn-file-sec">
+                                バックアップから復元 (JSON)
+                                <input type="file" id="backupImportFile" accept=".json">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 共同口座設定カード -->
+            <div class="card card-joint-settings feature-section-jointAccount feature-hidden">
+                <h2>🏦 共同口座の設定</h2>
+                <p class="settings-desc">パートナーと共有する生活費口座の情報と、毎月の負担ルールを設定します。</p>
+
+                <div class="joint-settings-grid">
+                    <div class="settings-row">
+                        <label class="settings-label" for="joint-accountName">口座名</label>
+                        <input type="text" id="joint-accountName" placeholder="例: 共同生活費口座" class="settings-input">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label" for="joint-bankName">銀行名</label>
+                        <select id="joint-bankName" class="settings-input">
+                            <option value="住信SBIネット銀行">住信SBIネット銀行</option>
+                            <option value="みずほ銀行">みずほ銀行</option>
+                            <option value="三菱UFJ銀行">三菱UFJ銀行</option>
+                            <option value="三井住友銀行">三井住友銀行</option>
+                            <option value="楽天銀行">楽天銀行</option>
+                            <option value="PayPay銀行">PayPay銀行</option>
+                            <option value="ゆうちょ銀行">ゆうちょ銀行</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label" for="joint-initialBalance">初期残高（円）</label>
+                        <input type="number" id="joint-initialBalance" placeholder="例: 150000" class="settings-input">
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-label" for="joint-targetBudget">毎月の生活費目標額（円）</label>
+                        <input type="number" id="joint-targetBudget" placeholder="例: 200000" class="settings-input">
+                    </div>
+
+                    <div class="settings-row joint-split-rule-row">
+                        <span class="settings-label">負担ルール</span>
+                        <div class="joint-rule-radio-group">
+                            <label class="radio-label">
+                                <input type="radio" name="jointSplitRule" value="ratio" checked>
+                                <span>比率で分担</span>
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="jointSplitRule" value="fixed">
+                                <span>固定金額で分担</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 比率入力グループ -->
+                    <div id="jointRatioInputsGroup" class="joint-ratio-group" style="display:flex;">
+                        <div class="settings-row">
+                            <label class="settings-label">負担比率スライダー</label>
+                            <div class="joint-slider-wrap">
+                                <div class="joint-slider-labels">
+                                    <span>自分</span><span>パートナー</span>
+                                </div>
+                                <input type="range" id="joint-myRatio" min="0" max="100" step="5" value="50"
+                                    class="joint-slider">
+                                <input type="hidden" id="joint-partnerRatio" value="50">
+                                <div id="jointRatioDisplay" class="joint-ratio-display">自分 50% : パートナー 50%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 固定金額入力グループ -->
+                    <div id="jointFixedInputsGroup" class="joint-fixed-group" style="display:none;">
+                        <div class="settings-row">
+                            <label class="settings-label" for="joint-myFixedAmount">自分の月額拠出（円）</label>
+                            <input type="number" id="joint-myFixedAmount" placeholder="例: 100000"
+                                class="settings-input">
+                        </div>
+                        <div class="settings-row">
+                            <label class="settings-label" for="joint-partnerFixedAmount">パートナーの月額拠出（円）</label>
+                            <input type="number" id="joint-partnerFixedAmount" placeholder="例: 100000"
+                                class="settings-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <button id="saveJointSettingsBtn" class="btn-primary">💾 共同口座設定を保存</button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- 共同口座専用タブ -->
+    <section id="tab-joint" class="tab-content">
+        <div class="joint-tab-layout">
+
+            <!-- 左カラム: キャッシュカード + サマリー -->
+            <div class="joint-col-left">
+                <!-- クレジットカード風口座カード -->
+                <div class="joint-premium-card">
+                    <div class="joint-premium-card-inner">
+                        <div class="joint-premium-card-top">
+                            <div class="joint-premium-chip">
+                                <div class="chip-lines"><span></span><span></span><span></span></div>
+                            </div>
+                            <div class="joint-premium-bank" id="jointCardBankName">住信SBIネット銀行</div>
+                        </div>
+                        <div class="joint-premium-balance-label">現在残高</div>
+                        <div class="joint-premium-balance" id="jointCardBalance">0 円</div>
+                        <div class="joint-premium-card-bottom">
+                            <div class="joint-premium-account" id="jointCardAccountName">共同生活費口座</div>
+                            <div class="joint-premium-sync" id="jointCardSyncTime">最終同期: 未同期</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 今月の予算消化 -->
+                <div class="card joint-budget-card">
+                    <h3>📊 今月の生活費予算</h3>
+                    <div class="joint-budget-amounts">
+                        <span class="joint-budget-expense" id="tabJointExpense">0 円</span>
+                        <span class="joint-budget-sep"> / </span>
+                        <span class="joint-budget-target" id="tabJointTargetBudget">0 円</span>
+                    </div>
+                    <div class="progress-bar-container" style="margin-top:8px;">
+                        <div class="progress-fill bar-success" id="tabBudgetProgressBar" style="width:0%"></div>
+                    </div>
+                    <div class="joint-budget-percent" id="tabBudgetPercent">0% 消化</div>
+                </div>
+
+                <!-- 今月の拠出状況 -->
+                <div class="card joint-deposit-card">
+                    <h3>💸 今月の拠出状況</h3>
+                    <div class="joint-member-deposit">
+                        <div class="joint-member-deposit-row">
+                            <span class="joint-member-label">👤 自分</span>
+                            <div class="joint-member-amounts">
+                                <span class="joint-deposit-amount" id="tabMyDeposit">0 円</span>
+                                <span class="joint-deposit-sep">/ 目標</span>
+                                <span class="joint-deposit-target" id="tabMyTarget">0 円</span>
+                            </div>
+                        </div>
+                        <div class="joint-member-deposit-row">
+                            <span class="joint-member-label">👤 パートナー</span>
+                            <div class="joint-member-amounts">
+                                <span class="joint-deposit-amount" id="tabPartnerDeposit">0 円</span>
+                                <span class="joint-deposit-sep">/ 目標</span>
+                                <span class="joint-deposit-target" id="tabPartnerTarget">0 円</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 精算バランス -->
+                <div class="card joint-settle-card">
+                    <h3>💰 精算バランス</h3>
+                    <div id="tabSettlementText" class="settle-badge-large settle-balanced">今月の入金拠出はまだ記録されていません</div>
+                    <button id="settleBalanceBtn" class="btn-primary" style="margin-top:12px; width:100%;" disabled>✅
+                        精算完了を記録する</button>
+                </div>
+            </div>
+
+            <!-- 右カラム: 明細テーブル + インポート -->
+            <div class="joint-col-right">
+                <div class="card">
+                    <div class="card-header-flex">
+                        <h2>🏦 共同口座 取引履歴</h2>
+                        <!-- テスト用自動明細同期ボタン（無効化中）
+                        <button id="syncJointBankBtn" class="btn-primary">⚡ 銀行明細を同期</button>
+                        -->
+                    </div>
+                    <div class="joint-import-actions">
+                        <label class="btn-file">
+                            📂 銀行明細CSVを取り込む
+                            <input type="file" id="jointCsvImportFile" accept=".csv">
+                        </label>
+                        <span class="joint-import-note">ネット銀行でダウンロードした明細CSV（日付・内容・金額）をそのまま取り込めます</span>
+                    </div>
+                    <div class="table-responsive" style="margin-top:12px;">
+                        <table class="records-table">
+                            <thead>
+                                <tr>
+                                    <th>日付</th>
+                                    <th>区分</th>
+                                    <th>カテゴリ</th>
+                                    <th>金額</th>
+                                    <th>メモ</th>
+                                    <th>登録者</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jointRecordsTableBody">
+                                <!-- JSで生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- 編集用モーダルウィンドウ -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>レコードの編集</h2>
+                    <button id="closeModalBtn" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-id">
+
+                    <div class="form-row inline-row">
+                        <label for="edit-date">日付</label>
+                        <input type="date" id="edit-date">
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="edit-type">区分</label>
+                        <select id="edit-type">
+                            <option value="収入">収入</option>
+                            <option value="支出">支出</option>
+                            <option value="貯金">貯金（入金）</option>
+                            <option value="貯金出金">貯金出金</option>
+                            <option value="サブスク" class="feature-section-subscription feature-hidden">サブスク（月額）</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="edit-amount">金額</label>
+                        <div class="amount-input-group">
+                            <input type="number" id="edit-amount">
+                            <span class="currency-label">円</span>
+                        </div>
+                    </div>
+
+                    <div class="form-row category-picker-group">
+                        <div class="category-header-row">
+                            <label for="edit-category">カテゴリー</label>
+                            <span class="category-current-tag" id="edit-currentCategoryTag">選択中: -</span>
+                        </div>
+                        <select id="edit-category" class="category-hidden-select">
+                            <!-- JSで動的にオプション生成 -->
+                        </select>
+                        <div id="edit-categoryGrid" class="category-grid category-grid-modal" role="radiogroup" aria-label="カテゴリー選択">
+                            <!-- JSで動的にタイルボタン生成 -->
+                        </div>
+                    </div>
+
+                    <div class="form-row inline-row">
+                        <label for="edit-memo">メモ</label>
+                        <input type="text" id="edit-memo">
+                    </div>
+
+                    <!-- 家族共有がONのときのみ表示 -->
+                    <div class="form-row inline-row feature-section-familyShare feature-hidden">
+                        <label for="edit-owner">登録者</label>
+                        <select id="edit-owner">
+                            <option value="自分">自分</option>
+                            <option value="パートナー">パートナー</option>
+                            <option value="共通">共通</option>
+                        </select>
+                    </div>
+
+                    <!-- 共同口座がONのときのみ表示 -->
+                    <div class="form-row inline-row feature-section-jointAccount feature-hidden">
+                        <label for="edit-account">口座</label>
+                        <select id="edit-account">
+                            <option value="personal">👤 個人口座</option>
+                            <option value="joint">🏦 共同口座</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelModalBtn" class="btn-secondary">キャンセル</button>
+                    <button id="saveModalBtn" class="btn-primary">保存する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 音声入力用モーダルウィンドウ -->
+        <div id="voiceModal" class="modal">
+            <div class="modal-content voice-modal-content">
+                <div class="modal-header">
+                    <h2><span class="modal-icon">🎙️</span> スマート音声入力</h2>
+                    <button id="closeVoiceModalBtn" class="btn-close">&times;</button>
+                </div>
+                <div class="modal-body voice-modal-body">
+                    <!-- マイクと波形アニメーション -->
+                    <div class="voice-hero-container">
+                        <div class="voice-wave-container" id="voiceWaveContainer">
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                            <span class="wave-bar"></span>
+                        </div>
+
+                        <button type="button" id="voiceModalMicBtn" class="btn-mic-large" title="マイクを押して話す">
+                            <span class="mic-glyph">🎙️</span>
+                        </button>
+
+                        <div id="voiceModalStatus" class="voice-status-text">
+                            聞き取り中... お話しください（例: 食費 850円 ランチ）
+                        </div>
+                    </div>
+
+                    <!-- 認識されたテキスト -->
+                    <div class="voice-transcript-card">
+                        <div class="transcript-label">聞き取った音声:</div>
+                        <div id="voiceTranscriptText" class="transcript-text">
+                            （音声を待機しています...）
+                        </div>
+                    </div>
+
+                    <!-- 自動解析プレビュー -->
+                    <div class="voice-preview-card">
+                        <h3>🔍 自動解析プレビュー</h3>
+                        <div class="preview-fields-grid">
+                            <div class="preview-field">
+                                <span class="field-label">日付</span>
+                                <span id="voicePreviewDate" class="field-val">-</span>
+                            </div>
+                            <div class="preview-field">
+                                <span class="field-label">区分</span>
+                                <span id="voicePreviewType" class="preview-type-tag">-</span>
+                            </div>
+                            <div class="preview-field">
+                                <span class="field-label">カテゴリ</span>
+                                <span id="voicePreviewCategory" class="field-val">-</span>
+                            </div>
+                            <div class="preview-field preview-field-amount">
+                                <span class="field-label">金額</span>
+                                <span id="voicePreviewAmount" class="field-val amount-val">-</span>
+                            </div>
+                            <div class="preview-field preview-field-full">
+                                <span class="field-label">メモ</span>
+                                <span id="voicePreviewMemo" class="field-val memo-val">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="fillOnlyVoiceRecordBtn" class="btn-secondary" disabled>フォームに反映のみ</button>
+                    <button type="button" id="applyVoiceRecordBtn" class="btn-primary" disabled>反映して保存する</button>
+                </div>
+            </div>
+        </div>
+
+</body>
+
+</html>
